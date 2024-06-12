@@ -13,15 +13,97 @@ package class02;
  */
 
 public class App_Cola {
+
     public static void main(String[] args) {
-        int[] valOfCoins = new int[]{100,50,10};
-        int[] numOfCoins = new int[]{3,4,1};
-        int x = 250;
-        int m = 2;
-        int op = solution(valOfCoins, numOfCoins, x, m);
-        System.out.println("共需要"+op+"次操作.");
+//        int[] valOfCoins = new int[]{100,50,10};
+//        int[] numOfCoins = new int[]{3,4,1};
+//        int x = 250;
+//        int m = 2;
+//        int op = solution(valOfCoins, numOfCoins, x, m);
+//        System.out.println("共需要"+op+"次操作.");
+
+        int testTime = 1000;
+        int zhangMax = 10;
+        int colaMax = 10;
+        int priceMax = 20;
+        System.out.println("如果错误会打印错误数据，否则就是正确");
+        System.out.println("test begin");
+        for (int i = 0; i < testTime; i++) {
+            int m = (int) (Math.random() * colaMax);
+            int a = (int) (Math.random() * zhangMax);
+            int b = (int) (Math.random() * zhangMax);
+            int c = (int) (Math.random() * zhangMax);
+            int x = ((int) (Math.random() * priceMax) + 1) * 10;
+            int[] valOfCoins = new int[]{100,50,10};
+            int[] numOfCoins = new int[]{c,b,a};
+            int ans1 = solution(valOfCoins, numOfCoins, x, m);
+            int ans2 = right(m, a, b, c, x);
+            if (ans1 != ans2) {
+                System.out.println("int m = " + m + ";");
+                System.out.println("int a = " + a + ";");
+                System.out.println("int b = " + b + ";");
+                System.out.println("int c = " + c + ";");
+                System.out.println("int x = " + x + ";");
+                break;
+            }
+        }
+        System.out.println("test end");
     }
 
+
+    public static int right(int m, int a, int b, int c, int x) {
+        int[] qian = { 100, 50, 10 };
+        int[] zhang = { c, b, a };
+        int puts = 0;
+        while (m != 0) {
+            int cur = buy(qian, zhang, x);
+            if (cur == -1) {
+                return -1;
+            }
+            puts += cur;
+            m--;
+        }
+        return puts;
+    }
+
+    public static int buy(int[] qian, int[] zhang, int rest) {
+        int first = -1;
+        for (int i = 0; i < 3; i++) {
+            if (zhang[i] != 0) {
+                first = i;
+                break;
+            }
+        }
+        if (first == -1) {
+            return -1;
+        }
+        if (qian[first] >= rest) {
+            zhang[first]--;
+            giveRest(qian, zhang, first + 1, qian[first] - rest, 1);
+            return 1;
+        } else {
+            zhang[first]--;
+            int next = buy(qian, zhang, rest - qian[first]);
+            if (next == -1) {
+                return -1;
+            }
+            return 1 + next;
+        }
+    }
+
+    public static void giveRest(int[] qian, int[] zhang, int i, int oneTimeRest, int times) {
+        for (; i < 3; i++) {
+            zhang[i] += (oneTimeRest / qian[i]) * times;
+            oneTimeRest %= qian[i];
+        }
+    }
+
+    private static void updateRemain(int[] valOfCoins, int[] numOfCoins, int i, int oneTimeRest, int time) {
+        for( ;i < valOfCoins.length; i++){
+            numOfCoins[i] += (oneTimeRest / valOfCoins[i]) * time;
+            oneTimeRest %= valOfCoins[i];
+        }
+    }
     private static int solution(int[] valOfCoins, int[] numOfCoins, int x, int m) {
 
             int historicalVal = 0;
@@ -30,48 +112,47 @@ public class App_Cola {
 
             // 从大面值到小面值, 计算购买可乐的数量
             for (int i = 0; i < valOfCoins.length && m != 0; i++){
-                   //先花历史金额
-                   if (historicalVal >= x) {
-                      op += historicalOp;
+                   //先花历史金额, 包含当前i种硬币, WARN: 之所以要考虑当前i种硬币，是为了能清空historicalOp
+                   int numOfCoinsUsedForFirstCola = (x - historicalVal + valOfCoins[i] - 1) / valOfCoins[i];
+                   if (numOfCoins[i] >= numOfCoinsUsedForFirstCola) {
+                      updateRemain(valOfCoins, numOfCoins, i + 1, historicalVal + numOfCoinsUsedForFirstCola * valOfCoins[i] - x ,1);
+                      //当前种货币张数去掉
+                      numOfCoins[i] -= numOfCoinsUsedForFirstCola;
+                      op += numOfCoinsUsedForFirstCola + historicalOp;
                       historicalOp = 0;
-                      historicalVal %= x;
+                      historicalVal = 0;
+                      m--;
+
+                   } else {
+                       historicalVal += numOfCoins[i] * valOfCoins[i];
+                       historicalOp += numOfCoins[i];
+                       continue;
                    }
 
                     //计算购买一个x需要i种硬币的张数
                     int numOfCoinsUsed = (x + valOfCoins[i] - 1) / valOfCoins[i];
                     //使用i种硬币可以购买多少x
-                    int numOfXbought = numOfCoins[i] / numOfCoinsUsed;
-
-                    for (int j = 0; j < numOfXbought; j++) {
-                        //找零
-                        int restVal = numOfCoinsUsed * valOfCoins[i] - x;
-                        //找零数累加到后续硬币种类上
-                        updateRemain(valOfCoins, numOfCoins, i, restVal);
-                        //更新op
-                        op += numOfCoinsUsed;
-                        //更新cola
-                        if (--m == 0) {
-                            return op;
-                        }
-                    }
-
-                    //购买完之后剩余i种硬币的数量
-                    int numOfCoinsRemain = numOfCoins[i] % numOfCoinsUsed;
+                    int numOfXbought = Math.min(numOfCoins[i] / numOfCoinsUsed, m);
+                    //当前i种货币每次购买可乐的找零数
+                    int restVal = numOfCoinsUsed * valOfCoins[i] - x;
+                    //直接把所有找零的钱给后面种类的货币
+                    updateRemain(valOfCoins, numOfCoins, i + 1, restVal , numOfXbought);
+                    //更新op
+                    op+= numOfCoinsUsed * numOfXbought;
+                    //更新cola
+                    m -=  numOfXbought;
+                    //当前i种货币扣减张数
+                    numOfCoins[i] -= numOfXbought * numOfCoinsUsed;
 
                     //更新历史值
-                    historicalVal += numOfCoins[i] - numOfCoinsUsed * numOfXbought;
-                    historicalOp += numOfCoinsRemain;
+                    historicalVal += numOfCoins[i] * valOfCoins[i];
+                    historicalOp += numOfCoins[i];
             }
-            return op;
+            return m == 0 ? op : -1;
 
     }
 
-    private static void updateRemain(int[] valOfCoins, int[] numOfCoins, int i, int restVal) {
-        for( ;i < valOfCoins.length && restVal > 0; i++){
-            numOfCoins[i] += restVal / valOfCoins[i];
-            restVal %= valOfCoins[i];
-        }
-    }
+
 
 
 }
