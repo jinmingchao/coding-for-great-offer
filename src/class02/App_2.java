@@ -6,15 +6,21 @@ import java.util.Map;
 public class App_2 {
 
     public static void main(String[] args) {
-            int N = 7;
+            int N = 4;
             int start = 2;
             int aim = 4;
             int K = 4;
-            Map<String,Integer> cache = new HashMap<>();
-            System.out.println(process(N,start,aim,K,cache));
+            int[][] dp = new int[N + 1][K + 1]; // dp[cur = 当前位置][rest = 剩余步数];
+            for (int i = 0; i < dp.length; i++) {
+                for (int j = 0; j < dp[0].length; j++) {
+                    dp[i][j] = -1;
+                }
+            }
+            System.out.println(process(N,start,aim,K, dp));
     }
 
-    static int process(int N, int start, int aim, int K, Map<String, Integer> cache) {
+    static int process(int N, int start, int aim, int K, int[][] dp) {
+           if(dp[start][K] != -1) return dp[start][K];
            if (K == 0) {
               if(start == aim) {
                   return 1;
@@ -23,51 +29,15 @@ public class App_2 {
               }
            }
 
-           int leftPos = start - 1;
-           int rightPos = start + 1;
+           int r = 0;
 
            if (start == 1) {
-               leftPos = 2;
-           }
-           if (start == N) {
-               rightPos = N - 1;
-           }
-
-           int r = 0;
-           String k = start +"-"+ aim + "-" + (K - 1);
-           if (cache.containsKey(k)) {
-               return cache.get(k);
-           }
-
-           String k1, k2;
-           if (leftPos == rightPos) {
-               k1 = leftPos + "-" + aim + "-" + (K - 1);
-               if (cache.containsKey(k)) {
-                   return cache.get(k);
-               }
-               r = process(N, leftPos, aim, K - 1, cache);
-               cache.put(k1, r);
+              r = process(N, 2, aim, K - 1, dp);
+           } else if (start == N) {
+              r =  process(N, N - 1,aim, K - 1, dp);
            } else {
-               k1 = leftPos + "-" + aim + "-" + (K - 1);
-               k2 = rightPos + "-" + aim + "-" + (K - 1);
-               int r1, r2;
-               if (cache.containsKey(k1)) {
-                   r1 = cache.get(k1);
-               } else {
-                   r1 = process(N, leftPos, aim, K - 1, cache);
-                   cache.put(k1, r1);
-               }
-
-               if (cache.containsKey(k2)) {
-                   r2 = cache.get(k2);
-               } else {
-                   r2 = process(N, rightPos, aim, K - 1, cache);
-                   cache.put(k2, r2);
-               }
-               r = r1 + r2;
+              r =process(N,start - 1, aim, K-1,dp) + process(N,start + 1,aim,K - 1,dp);
            }
-
-           cache.put(k, r);
-           return r;
+           return dp[start][K] = r;
     }
 }
